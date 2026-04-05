@@ -11,13 +11,15 @@ import { gradients } from "./gradients.js";
 import { geometries } from "./geometries.js";
 import { effects } from "./effects.js";
 import { fonts } from "./fonts.js";
+import { groups } from "./groups.js";
 
 export type TransformName =
   | "table-styles"
   | "gradients"
   | "geometries"
   | "effects"
-  | "fonts";
+  | "fonts"
+  | "groups";
 
 export interface TransformContext {
   tableStyleXml?: any;
@@ -39,4 +41,5 @@ export const ALL_TRANSFORMS: Transform[] = [
   geometries,
   effects,
   fonts,
+  groups,
 ];

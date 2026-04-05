@@ -9,6 +9,7 @@ import JSZip from "jszip";
 import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import { xmlParserOptions, xmlBuilderOptions } from "./xml.js";
 import { ALL_TRANSFORMS, type TransformName, type Transform } from "./transforms/index.js";
+import { addChartFallbacks } from "./chart-fallbacks.js";
 
 export interface FixOptions {
   /** Apply only these transforms (default: all) */
@@ -88,6 +89,9 @@ export async function fix(pptxBuffer: Buffer, options?: FixOptions): Promise<Fix
       }
     }
   }
+
+  // Generate chart fallback images (requires Playwright — skips if not installed)
+  await addChartFallbacks(zip, pptxBuffer, reportLines);
 
   const outBuffer = Buffer.from(await zip.generateAsync({ type: "nodebuffer" }));
 

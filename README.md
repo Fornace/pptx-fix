@@ -81,6 +81,8 @@ for (const issue of issues) {
 | **gradients** | Done | Collapses 3+ stop gradients to 2-stop (first + last color) so QuickLook renders a gradient instead of a flat color. |
 | **effects** | Done | Strips `<effectLst>` and `<effectDag>` (drop shadow, glow, reflection) from shape properties to prevent opaque PDF block rendering. |
 | **fonts** | Done | Replaces high-risk Windows fonts (Calibri +14.4%, Segoe UI +14%, Corbel +18.8%, etc.) with metrically-closest cross-platform alternatives to prevent text reflow on macOS. Also fixes fonts in theme XML. |
+| **groups** | Done | Ungroups shape groups so children render individually instead of being merged into a single opaque PDF block. Transforms child coordinates from group-space to slide-space. Skips rotated groups. |
+| **chart-fallbacks** | Done | Renders charts to PNG and embeds as fallback images so QuickLook displays charts instead of blank rectangles. Requires Playwright (optional — skips silently if not installed). |
 
 Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s 12-rule linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
 
