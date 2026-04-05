@@ -1,0 +1,42 @@
+{
+  "name": "pptx-fix",
+  "version": "0.1.0",
+  "description": "Fix PPTX files so they look correct in macOS QuickLook and iOS preview. Resolves table styles, gradients, unsupported geometries, and other OfficeImport rendering gaps.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "pptx-fix": "dist/cli.js"
+  },
+  "keywords": [
+    "pptx", "powerpoint", "quicklook", "macos", "ios", "fix", "repair",
+    "officeimport", "ooxml", "office-open-xml", "table-styles",
+    "python-pptx", "pptxgenjs", "presentation", "converter",
+    "apple", "preview", "slides"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "fast-xml-parser": "^5.2.0",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
