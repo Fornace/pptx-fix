@@ -3,4 +3,4 @@
  * Delegates to quicklook-pptx-renderer's linter — single source of truth.
  */
 
-export { lint as analyze, formatIssues, type LintResult, type LintIssue } from "quicklook-pptx-renderer";
+export { lint as analyze, formatIssues, type LintResult, type LintIssue, type LintFix } from "quicklook-pptx-renderer";

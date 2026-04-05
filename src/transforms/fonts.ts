@@ -11,38 +11,28 @@
  */
 
 import type { Transform, TransformContext, TransformResult } from "./index.js";
-import { FONT_METRICS, findClosestFont } from "quicklook-pptx-renderer";
+import { FONT_METRICS, FONT_SUBSTITUTIONS, findClosestFont, widthDelta } from "quicklook-pptx-renderer";
 
-// Fonts available on both Windows and macOS with ≤1% substitution delta.
-const SAFE_FONTS = [
-  "Arial", "Verdana", "Georgia", "Trebuchet MS",
-  "Times New Roman", "Courier New", "Impact",
-  "Palatino Linotype", "Century Gothic",
-];
+const DELTA_THRESHOLD = 10;
 
-// macOS substitutions with ≥10% absolute width delta — these cause reflow.
-const HIGH_RISK = new Set([
-  "Calibri", "Calibri Light",
-  "Arial Black", "Arial Narrow",
-  "Tahoma",
-  "Segoe UI", "Segoe UI Light", "Segoe UI Semibold",
-  "Franklin Gothic Medium",
-  "Corbel", "Candara",
-]);
+// Fonts available on macOS — everything in the metrics DB except Windows-only
+const SAFE_CANDIDATES = Object.keys(FONT_METRICS).filter(f => !FONT_SUBSTITUTIONS[f]);
 
 const replacementCache = new Map<string, string | null>();
 
 function getReplacement(fontName: string): string | null {
   if (replacementCache.has(fontName)) return replacementCache.get(fontName)!;
 
-  if (!HIGH_RISK.has(fontName) || !FONT_METRICS[fontName]) {
+  const macSub = FONT_SUBSTITUTIONS[fontName];
+  const srcMetrics = FONT_METRICS[fontName];
+  const subMetrics = macSub ? FONT_METRICS[macSub] : undefined;
+  if (!macSub || !srcMetrics || !subMetrics || Math.abs(widthDelta(srcMetrics, subMetrics)) < DELTA_THRESHOLD) {
     replacementCache.set(fontName, null);
     return null;
   }
 
-  const candidates = SAFE_FONTS.filter(f => FONT_METRICS[f]);
   const matches = findClosestFont(fontName, {
-    candidates,
+    candidates: SAFE_CANDIDATES,
     sameCategory: true,
     limit: 1,
   });
