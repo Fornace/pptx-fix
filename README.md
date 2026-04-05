@@ -77,9 +77,9 @@ for (const issue of issues) {
 | Transform | Status | What it fixes |
 |-----------|--------|--------------|
 | **table-styles** | Done | Resolves `tableStyleId` references and inlines explicit `<a:lnL/R/T/B>` borders on every cell. Handles `firstRow`, `lastRow`, `bandRow` conditional formatting. Only adds borders where none are explicitly defined. |
-| **geometries** | Planned | Replace unsupported `<a:prstGeom>` (heart, cloud, lightningBolt, sun, moon, frame, arc, chord, etc.) with `<a:custGeom>` path data. |
-| **gradients** | Planned | Collapse 3+ stop gradients to 2-stop (start + end color) so QuickLook renders a gradient instead of a flat color. |
-| **effects** | Planned | Strip or adjust shapes with `<effectLst>` (drop shadow, glow, reflection) that render as opaque PDF blocks covering content. |
+| **geometries** | Done | Replaces unsupported `<a:prstGeom>` presets (~120 shapes not in OfficeImport's supported set) with `rect` so shapes are visible instead of invisible. |
+| **gradients** | Done | Collapses 3+ stop gradients to 2-stop (first + last color) so QuickLook renders a gradient instead of a flat color. |
+| **effects** | Done | Strips `<effectLst>` and `<effectDag>` (drop shadow, glow, reflection) from shape properties to prevent opaque PDF block rendering. |
 
 Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s 12-rule linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
 
