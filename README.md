@@ -17,6 +17,7 @@ Common artifacts:
 - **Gradients become flat colors** — 3+ color stops are averaged to a single solid color
 - **Drop shadows become opaque blocks** — shapes with effects render as opaque PDF images that cover content behind them
 - **Fonts shift and text reflows** — Calibri becomes Helvetica Neue, Arial becomes Helvetica, with different metrics
+- **Embedded fonts ignored** — custom fonts embedded in the PPTX are completely ignored by QuickLook, falling back to system substitutes
 
 `pptx-fix` rewrites the OOXML XML inside the PPTX ZIP to work around these OfficeImport quirks. The output is a valid `.pptx` that looks correct in both PowerPoint and Apple's preview.
 
@@ -82,9 +83,10 @@ for (const issue of issues) {
 | **effects** | Done | Strips `<effectLst>` and `<effectDag>` (drop shadow, glow, reflection) from shape properties to prevent opaque PDF block rendering. |
 | **fonts** | Done | Replaces high-risk Windows fonts (Calibri +14.4%, Segoe UI +14%, Corbel +18.8%, etc.) with metrically-closest cross-platform alternatives to prevent text reflow on macOS. Also fixes fonts in theme XML. |
 | **groups** | Done | Ungroups shape groups so children render individually instead of being merged into a single opaque PDF block. Transforms child coordinates from group-space to slide-space. Skips rotated groups. |
+| **embedded-fonts** | Done | Strips embedded font data (ignored by QuickLook) and replaces font references with the metrically-closest cross-platform alternative. Reduces file size and ensures consistent rendering. |
 | **chart-fallbacks** | Done | Renders charts to PNG and embeds as fallback images so QuickLook displays charts instead of blank rectangles. Requires Playwright (optional — skips silently if not installed). |
 
-Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s 11-rule linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
+Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s 12-rule linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
 
 ---
 
@@ -126,7 +128,7 @@ The round-trip preserves all XML elements the tool doesn't explicitly modify —
 For comprehensive linting with 12 rules, CI integration, cross-platform rendering, and pixel-diff comparison against actual QuickLook output, see [**quicklook-pptx-renderer**](https://www.npmjs.com/package/quicklook-pptx-renderer) — a companion renderer + linter that replicates Apple's QuickLook output pixel for pixel, runs on Linux/Docker without a Mac.
 
 ```bash
-# Lint (12 rules, JSON output for CI)
+# Lint (JSON output for CI)
 npx quicklook-pptx lint presentation.pptx --json
 
 # Render slides as PNG (see exactly what Mac users see)

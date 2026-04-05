@@ -10,6 +10,7 @@ import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import { xmlParserOptions, xmlBuilderOptions } from "./xml.js";
 import { ALL_TRANSFORMS, type TransformName, type Transform } from "./transforms/index.js";
 import { addChartFallbacks } from "./chart-fallbacks.js";
+import { stripEmbeddedFonts } from "./embedded-fonts.js";
 
 export interface FixOptions {
   /** Apply only these transforms (default: all) */
@@ -29,7 +30,8 @@ export async function fix(pptxBuffer: Buffer, options?: FixOptions): Promise<Fix
   const builder = new XMLBuilder(xmlBuilderOptions);
   const reportLines: string[] = [];
 
-  const enabledNames = new Set<TransformName>(options?.transforms ?? ALL_TRANSFORMS.map(t => t.name));
+  const allNames: TransformName[] = [...ALL_TRANSFORMS.map(t => t.name), "embedded-fonts"];
+  const enabledNames = new Set<TransformName>(options?.transforms ?? allNames);
   const enabled = ALL_TRANSFORMS.filter(t => enabledNames.has(t.name));
 
   // Find all slide XML files
@@ -88,6 +90,11 @@ export async function fix(pptxBuffer: Buffer, options?: FixOptions): Promise<Fix
         }
       }
     }
+  }
+
+  // Strip embedded fonts (QuickLook ignores them, they just bloat the file)
+  if (enabledNames.has("embedded-fonts")) {
+    await stripEmbeddedFonts(zip, reportLines);
   }
 
   // Generate chart fallback images (requires Playwright — skips if not installed)

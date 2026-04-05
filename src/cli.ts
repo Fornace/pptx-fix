@@ -29,7 +29,7 @@ function positional(): string[] {
 
 async function main() {
   if (hasFlag("--version") || hasFlag("-v")) {
-    console.log("0.3.0");
+    console.log("0.3.1");
     process.exit(0);
   }
 

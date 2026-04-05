@@ -19,7 +19,8 @@ export type TransformName =
   | "geometries"
   | "effects"
   | "fonts"
-  | "groups";
+  | "groups"
+  | "embedded-fonts";
 
 export interface TransformContext {
   tableStyleXml?: any;
