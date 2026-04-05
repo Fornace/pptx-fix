@@ -37,7 +37,7 @@ npm install pptx-fix
 npx pptx-fix input.pptx -o output.pptx
 
 # Apply only specific transforms
-npx pptx-fix input.pptx -o output.pptx --only table-styles,gradients
+npx pptx-fix input.pptx -o output.pptx --only table-styles,gradients,fonts
 
 # See what was changed
 npx pptx-fix input.pptx -o output.pptx --report
@@ -80,6 +80,7 @@ for (const issue of issues) {
 | **geometries** | Done | Replaces unsupported `<a:prstGeom>` presets (~120 shapes not in OfficeImport's supported set) with `rect` so shapes are visible instead of invisible. |
 | **gradients** | Done | Collapses 3+ stop gradients to 2-stop (first + last color) so QuickLook renders a gradient instead of a flat color. |
 | **effects** | Done | Strips `<effectLst>` and `<effectDag>` (drop shadow, glow, reflection) from shape properties to prevent opaque PDF block rendering. |
+| **fonts** | Done | Replaces high-risk Windows fonts (Calibri +14.4%, Segoe UI +14%, Corbel +18.8%, etc.) with metrically-closest cross-platform alternatives to prevent text reflow on macOS. Also fixes fonts in theme XML. |
 
 Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s 12-rule linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
 

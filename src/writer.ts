@@ -72,6 +72,23 @@ export async function fix(pptxBuffer: Buffer, options?: FixOptions): Promise<Fix
     }
   }
 
+  // Process theme XML for font replacement
+  if (enabledNames.has("fonts")) {
+    const fontsTransform = enabled.find(t => t.name === "fonts")!;
+    const themeFiles = Object.keys(zip.files).filter(f => /^ppt\/theme\/theme\d+\.xml$/.test(f));
+    for (const themePath of themeFiles) {
+      const xml = await zip.file(themePath)!.async("string");
+      const parsed = parser.parse(xml);
+      const result = fontsTransform.apply(parsed, 0, { tableStyleXml });
+      if (result.changed) {
+        zip.file(themePath, builder.build(parsed));
+        for (const line of result.changes) {
+          reportLines.push(`Theme: ${line}`);
+        }
+      }
+    }
+  }
+
   const outBuffer = Buffer.from(await zip.generateAsync({ type: "nodebuffer" }));
 
   const result: FixResult = { buffer: outBuffer };
