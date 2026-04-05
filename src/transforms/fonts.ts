@@ -11,12 +11,9 @@
  */
 
 import type { Transform, TransformContext, TransformResult } from "./index.js";
-import { FONT_METRICS, FONT_SUBSTITUTIONS, findClosestFont, widthDelta } from "quicklook-pptx-renderer";
+import { FONT_SUBSTITUTIONS, FONT_METRICS, findClosestFont, widthDelta, APPLE_SYSTEM_FONT_LIST } from "quicklook-pptx-renderer";
 
 const DELTA_THRESHOLD = 10;
-
-// Fonts available on macOS — everything in the metrics DB except Windows-only
-const SAFE_CANDIDATES = Object.keys(FONT_METRICS).filter(f => !FONT_SUBSTITUTIONS[f]);
 
 const replacementCache = new Map<string, string | null>();
 
@@ -32,7 +29,7 @@ function getReplacement(fontName: string): string | null {
   }
 
   const matches = findClosestFont(fontName, {
-    candidates: SAFE_CANDIDATES,
+    candidates: APPLE_SYSTEM_FONT_LIST,
     sameCategory: true,
     limit: 1,
   });

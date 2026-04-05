@@ -12,5 +12,7 @@ export { type TransformName, ALL_TRANSFORMS } from "./transforms/index.js";
 export {
   FONT_METRICS, FONT_SUBSTITUTIONS, SUPPORTED_GEOMETRIES, GEOMETRY_FALLBACKS,
   findClosestFont, widthDelta,
+  APPLE_SYSTEM_FONTS, APPLE_SYSTEM_FONT_LIST,
+  MACOS_SYSTEM_FONTS, MACOS_SYSTEM_FONT_LIST,
   type FontMetrics, type FontMatch, type FontCategory,
 } from "quicklook-pptx-renderer";

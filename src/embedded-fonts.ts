@@ -10,9 +10,7 @@
 
 import type JSZip from "jszip";
 import { XMLParser, XMLBuilder } from "fast-xml-parser";
-import { FONT_METRICS, FONT_SUBSTITUTIONS, findClosestFont } from "quicklook-pptx-renderer";
-
-const SAFE_CANDIDATES = Object.keys(FONT_METRICS).filter(f => !FONT_SUBSTITUTIONS[f]);
+import { FONT_METRICS, findClosestFont, APPLE_SYSTEM_FONT_LIST } from "quicklook-pptx-renderer";
 
 const FONT_ELEMENTS = new Set(["latin", "ea", "cs", "sym", "buFont"]);
 
@@ -54,7 +52,7 @@ const presBuilderOptions = {
 function findReplacement(fontName: string): string | null {
   if (!FONT_METRICS[fontName]) return null;
   const matches = findClosestFont(fontName, {
-    candidates: SAFE_CANDIDATES,
+    candidates: APPLE_SYSTEM_FONT_LIST,
     sameCategory: true,
     limit: 1,
   });
