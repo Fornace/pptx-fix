@@ -2,19 +2,12 @@
  * table-styles transform — Resolve table style conditional formatting into
  * explicit borders on every <a:tcPr>.
  *
- * Problem: python-pptx and other generators set a tableStyleId but don't
- * inline the actual border/fill properties. PowerPoint resolves these at
- * render time via the table style XML. OfficeImport (QuickLook) does NOT —
- * it only sees explicit properties, so tables render without borders/styling.
- *
- * Fix: Read the table style definition, resolve bandRow/firstRow/lastCol
- * conditional formatting, and write explicit <a:ln> on every <a:tcPr>.
+ * OfficeImport doesn't resolve tableStyleId references — it only sees
+ * explicit border properties. This inlines them from tableStyles.xml.
  */
 
-import type { Issue } from "../analyze.js";
 import type { Transform, TransformContext, TransformResult } from "./index.js";
 
-/** Walk the XML tree to find all table nodes. */
 function findTables(node: any, path = ""): { table: any; path: string }[] {
   const results: { table: any; path: string }[] = [];
   if (!node || typeof node !== "object") return results;
@@ -34,7 +27,6 @@ function findTables(node: any, path = ""): { table: any; path: string }[] {
   return results;
 }
 
-/** Check if a table has a style ID but cells lack explicit borders. */
 function tableNeedsFix(table: any): boolean {
   const tblPr = table.tblPr;
   if (!tblPr) return false;
@@ -42,7 +34,6 @@ function tableNeedsFix(table: any): boolean {
   const styleId = tblPr["@_tblStyle"] ?? tblPr.tblStyle;
   if (!styleId) return false;
 
-  // Check if any cell is missing explicit border definitions
   const rows = table.tr;
   if (!rows) return false;
   const rowArr = Array.isArray(rows) ? rows : [rows];
@@ -53,17 +44,14 @@ function tableNeedsFix(table: any): boolean {
     const cellArr = Array.isArray(cells) ? cells : [cells];
     for (const cell of cellArr) {
       const tcPr = cell.tcPr;
-      if (!tcPr) return true; // No properties at all — definitely needs fix
-      // Check if borders are defined
-      const hasBorders = tcPr.lnL || tcPr.lnR || tcPr.lnT || tcPr.lnB;
-      if (!hasBorders) return true;
+      if (!tcPr) return true;
+      if (!(tcPr.lnL || tcPr.lnR || tcPr.lnT || tcPr.lnB)) return true;
     }
   }
 
   return false;
 }
 
-/** Look up a table style definition by ID from tableStyles.xml. */
 function findStyleDef(tableStyleXml: any, styleId: string): any | undefined {
   if (!tableStyleXml) return undefined;
   const styleLst = tableStyleXml.tblStyleLst;
@@ -74,18 +62,15 @@ function findStyleDef(tableStyleXml: any, styleId: string): any | undefined {
   return arr.find((s: any) => s["@_styleId"] === styleId);
 }
 
-/** Build a border element (<a:lnL>, etc.) from a style definition's tcStyle. */
 function buildBorder(tcStyle: any, side: string): any | undefined {
   if (!tcStyle) return undefined;
   const borders = tcStyle.tcBdr;
   if (!borders) return undefined;
   const border = borders[side];
   if (!border) return undefined;
-  // The border has a ln (line) child with fill and width
   return border.ln ?? border;
 }
 
-/** Apply table style borders to all cells in a table. */
 function applyTableStyle(table: any, styleDef: any): string[] {
   const changes: string[] = [];
   const rows = table.tr;
@@ -97,7 +82,6 @@ function applyTableStyle(table: any, styleDef: any): string[] {
   const hasLastRow = tblPr["@_lastRow"] === "1" || tblPr["@_lastRow"] === "true";
   const hasBandRow = tblPr["@_bandRow"] === "1" || tblPr["@_bandRow"] === "true";
 
-  // Get style bands
   const wholeTbl = styleDef?.wholeTbl?.tcStyle;
   const firstRowStyle = hasFirstRow ? styleDef?.firstRow?.tcStyle : undefined;
   const lastRowStyle = hasLastRow ? styleDef?.lastRow?.tcStyle : undefined;
@@ -112,7 +96,6 @@ function applyTableStyle(table: any, styleDef: any): string[] {
     if (!cells) continue;
     const cellArr = Array.isArray(cells) ? cells : [cells];
 
-    // Determine which style applies to this row
     let activeStyle = wholeTbl;
     if (ri === 0 && firstRowStyle) activeStyle = firstRowStyle;
     else if (ri === rowArr.length - 1 && lastRowStyle) activeStyle = lastRowStyle;
@@ -122,10 +105,9 @@ function applyTableStyle(table: any, styleDef: any): string[] {
       if (!cell.tcPr) cell.tcPr = {};
       const tcPr = cell.tcPr;
 
-      // Only add borders that aren't already explicitly defined
       let modified = false;
       for (const [xmlSide, styleSide] of [["lnL", "left"], ["lnR", "right"], ["lnT", "top"], ["lnB", "bottom"]] as const) {
-        if (tcPr[xmlSide]) continue; // Already has explicit border
+        if (tcPr[xmlSide]) continue;
         const border = buildBorder(activeStyle, styleSide) ?? buildBorder(wholeTbl, styleSide);
         if (border) {
           tcPr[xmlSide] = border;
@@ -147,27 +129,7 @@ function applyTableStyle(table: any, styleDef: any): string[] {
 export const tableStyles: Transform = {
   name: "table-styles",
 
-  detect(slideXml: any, slideNum: number): Issue[] {
-    const issues: Issue[] = [];
-    const tables = findTables(slideXml);
-
-    for (const { table } of tables) {
-      if (tableNeedsFix(table)) {
-        const styleId = table.tblPr?.["@_tblStyle"] ?? table.tblPr?.tblStyle ?? "unknown";
-        issues.push({
-          type: "table-styles",
-          slide: slideNum,
-          element: `table(style=${styleId})`,
-          severity: "high",
-          description: "Table has style ID but cells lack explicit borders — will render without borders in QuickLook",
-        });
-      }
-    }
-
-    return issues;
-  },
-
-  apply(slideXml: any, slideNum: number, ctx: TransformContext): TransformResult {
+  apply(slideXml: any, _slideNum: number, ctx: TransformContext): TransformResult {
     const tables = findTables(slideXml);
     const changes: string[] = [];
 

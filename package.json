@@ -1,7 +1,7 @@
 {
   "name": "pptx-fix",
   "version": "0.1.0",
-  "description": "Fix PPTX files so they look correct in macOS QuickLook and iOS preview. Resolves table styles, gradients, unsupported geometries, and other OfficeImport rendering gaps.",
+  "description": "Fix PowerPoint files that render incorrectly on macOS QuickLook and iOS — resolves missing table borders, invisible shapes, flattened gradients, and opaque blocks caused by OfficeImport rendering gaps.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,10 +9,37 @@
     "pptx-fix": "dist/cli.js"
   },
   "keywords": [
-    "pptx", "powerpoint", "quicklook", "macos", "ios", "fix", "repair",
-    "officeimport", "ooxml", "office-open-xml", "table-styles",
-    "python-pptx", "pptxgenjs", "presentation", "converter",
-    "apple", "preview", "slides"
+    "pptx",
+    "powerpoint",
+    "quicklook",
+    "macos",
+    "ios",
+    "fix",
+    "repair",
+    "officeimport",
+    "ooxml",
+    "office-open-xml",
+    "table-styles",
+    "python-pptx",
+    "pptxgenjs",
+    "presentation",
+    "apple",
+    "preview",
+    "slides",
+    "iphone",
+    "ipad",
+    "finder",
+    "thumbnail",
+    "table-borders",
+    "shapes",
+    "gradients",
+    "rendering",
+    "google-slides",
+    "canva",
+    "libreoffice",
+    "pandoc",
+    "cross-platform",
+    "compatibility"
   ],
   "exports": {
     ".": {
@@ -33,7 +60,8 @@
   "license": "MIT",
   "dependencies": {
     "fast-xml-parser": "^5.2.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "quicklook-pptx-renderer": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -3,7 +3,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fix } from "./writer.js";
-import { analyze } from "./analyze.js";
+import { analyze, formatIssues } from "./analyze.js";
 import type { TransformName } from "./transforms/index.js";
 
 const args = process.argv.slice(2);
@@ -38,20 +38,9 @@ async function main() {
       process.exit(1);
     }
     const buf = await readFile(resolve(input));
-    const issues = await analyze(buf);
-
-    if (issues.length === 0) {
-      console.log("No issues found.");
-      return;
-    }
-
-    for (const issue of issues) {
-      const tag = issue.severity === "high" ? "HIGH" : issue.severity === "medium" ? "MED" : "LOW";
-      const elem = issue.element ? ` [${issue.element}]` : "";
-      console.log(`[${tag}] Slide ${issue.slide}${elem}: ${issue.description}`);
-    }
-    console.log(`\n${issues.length} issue(s) found.`);
-    return;
+    const result = await analyze(buf);
+    console.log(formatIssues(result));
+    process.exit(result.summary.errors > 0 ? 1 : 0);
   }
 
   // Default: fix
