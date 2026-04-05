@@ -77,13 +77,11 @@ for (const issue of issues) {
 | Transform | Status | What it fixes |
 |-----------|--------|--------------|
 | **table-styles** | Done | Resolves `tableStyleId` references and inlines explicit `<a:lnL/R/T/B>` borders on every cell. Handles `firstRow`, `lastRow`, `bandRow` conditional formatting. Only adds borders where none are explicitly defined. |
-| **geometries** | Detect | Finds shapes using presets that OfficeImport drops (heart, cloud, lightningBolt, sun, moon, frame, arc, chord, etc.). Fix will replace `<a:prstGeom>` with `<a:custGeom>` path data. |
-| **gradients** | Detect | Finds gradient fills with 3+ stops that QuickLook will average to a flat color. Fix will collapse to 2-stop (start + end color). |
-| **effects** | Detect | Finds shapes with `<effectLst>` (drop shadow, glow, reflection) that will render as opaque PDF blocks. Fix will strip effects or adjust z-ordering. |
-| **properties** | Planned | Resolve the full inheritance chain (theme → master → layout → slide) and inline explicit fill/font/color properties. |
-| **fonts** | Planned | Add explicit `<a:latin>`, `<a:ea>`, `<a:cs>` declarations with fallback typefaces. |
+| **geometries** | Planned | Replace unsupported `<a:prstGeom>` (heart, cloud, lightningBolt, sun, moon, frame, arc, chord, etc.) with `<a:custGeom>` path data. |
+| **gradients** | Planned | Collapse 3+ stop gradients to 2-stop (start + end color) so QuickLook renders a gradient instead of a flat color. |
+| **effects** | Planned | Strip or adjust shapes with `<effectLst>` (drop shadow, glow, reflection) that render as opaque PDF blocks covering content. |
 
-The `analyze` command runs all detectors without applying fixes — useful for CI pipelines or understanding what's wrong with a file.
+Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s 12-rule linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
 
 ---
 
