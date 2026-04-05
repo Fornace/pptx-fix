@@ -9,3 +9,4 @@
 export { fix, type FixOptions, type FixResult } from "./writer.js";
 export { analyze, formatIssues, type LintResult, type LintIssue } from "./analyze.js";
 export { type TransformName, ALL_TRANSFORMS } from "./transforms/index.js";
+export { FONT_METRICS, findClosestFont, widthDelta, type FontMetrics, type FontMatch, type FontCategory } from "quicklook-pptx-renderer";

@@ -61,7 +61,7 @@
   "dependencies": {
     "fast-xml-parser": "^5.2.0",
     "jszip": "^3.10.1",
-    "quicklook-pptx-renderer": "^0.1.0"
+    "quicklook-pptx-renderer": "^0.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
