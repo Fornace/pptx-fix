@@ -100,7 +100,7 @@ export async function fix(pptxBuffer: Buffer, options?: FixOptions): Promise<Fix
   // Generate chart fallback images (requires Playwright — skips if not installed)
   await addChartFallbacks(zip, pptxBuffer, reportLines);
 
-  const outBuffer = Buffer.from(await zip.generateAsync({ type: "nodebuffer" }));
+  const outBuffer = Buffer.from(await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } }));
 
   const result: FixResult = { buffer: outBuffer };
   if (options?.report) {

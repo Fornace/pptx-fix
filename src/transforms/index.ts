@@ -12,6 +12,7 @@ import { geometries } from "./geometries.js";
 import { effects } from "./effects.js";
 import { fonts } from "./fonts.js";
 import { groups } from "./groups.js";
+import { textMargin } from "./text-margin.js";
 
 export type TransformName =
   | "table-styles"
@@ -20,6 +21,7 @@ export type TransformName =
   | "effects"
   | "fonts"
   | "groups"
+  | "text-margin"
   | "embedded-fonts";
 
 export interface TransformContext {
@@ -43,4 +45,5 @@ export const ALL_TRANSFORMS: Transform[] = [
   effects,
   fonts,
   groups,
+  textMargin,
 ];
