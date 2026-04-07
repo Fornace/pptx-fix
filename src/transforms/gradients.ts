@@ -10,14 +10,14 @@ import type { Transform, TransformContext, TransformResult } from "./index.js";
 function collapseGradients(node: any, changes: string[], slideNum: number): void {
   if (!node || typeof node !== "object") return;
 
-  if (node.gradFill) {
-    const fills = Array.isArray(node.gradFill) ? node.gradFill : [node.gradFill];
+  if (node["a:gradFill"]) {
+    const fills = Array.isArray(node["a:gradFill"]) ? node["a:gradFill"] : [node["a:gradFill"]];
     for (const fill of fills) {
-      const gsLst = fill.gsLst;
+      const gsLst = fill["a:gsLst"];
       if (!gsLst) continue;
-      const stops = gsLst.gs;
+      const stops = gsLst["a:gs"];
       if (!Array.isArray(stops) || stops.length < 3) continue;
-      gsLst.gs = [stops[0], stops[stops.length - 1]];
+      gsLst["a:gs"] = [stops[0], stops[stops.length - 1]];
       changes.push(`collapsed ${stops.length}-stop gradient to 2 stops`);
     }
   }

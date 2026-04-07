@@ -12,9 +12,9 @@ function findTables(node: any, path = ""): { table: any; path: string }[] {
   const results: { table: any; path: string }[] = [];
   if (!node || typeof node !== "object") return results;
 
-  if (node.tbl) {
-    const tbls = Array.isArray(node.tbl) ? node.tbl : [node.tbl];
-    for (const t of tbls) results.push({ table: t, path: path + "/tbl" });
+  if (node["a:tbl"]) {
+    const tbls = Array.isArray(node["a:tbl"]) ? node["a:tbl"] : [node["a:tbl"]];
+    for (const t of tbls) results.push({ table: t, path: path + "/a:tbl" });
   }
 
   for (const key of Object.keys(node)) {
@@ -28,24 +28,24 @@ function findTables(node: any, path = ""): { table: any; path: string }[] {
 }
 
 function tableNeedsFix(table: any): boolean {
-  const tblPr = table.tblPr;
+  const tblPr = table["a:tblPr"];
   if (!tblPr) return false;
 
-  const styleId = tblPr["@_tblStyle"] ?? tblPr.tblStyle;
+  const styleId = tblPr["@_tblStyle"];
   if (!styleId) return false;
 
-  const rows = table.tr;
+  const rows = table["a:tr"];
   if (!rows) return false;
   const rowArr = Array.isArray(rows) ? rows : [rows];
 
   for (const row of rowArr) {
-    const cells = row.tc;
+    const cells = row["a:tc"];
     if (!cells) continue;
     const cellArr = Array.isArray(cells) ? cells : [cells];
     for (const cell of cellArr) {
-      const tcPr = cell.tcPr;
+      const tcPr = cell["a:tcPr"];
       if (!tcPr) return true;
-      if (!(tcPr.lnL || tcPr.lnR || tcPr.lnT || tcPr.lnB)) return true;
+      if (!(tcPr["a:lnL"] || tcPr["a:lnR"] || tcPr["a:lnT"] || tcPr["a:lnB"])) return true;
     }
   }
 
@@ -54,9 +54,9 @@ function tableNeedsFix(table: any): boolean {
 
 function findStyleDef(tableStyleXml: any, styleId: string): any | undefined {
   if (!tableStyleXml) return undefined;
-  const styleLst = tableStyleXml.tblStyleLst;
+  const styleLst = tableStyleXml["a:tblStyleLst"];
   if (!styleLst) return undefined;
-  const styles = styleLst.tblStyle;
+  const styles = styleLst["a:tblStyle"];
   if (!styles) return undefined;
   const arr = Array.isArray(styles) ? styles : [styles];
   return arr.find((s: any) => s["@_styleId"] === styleId);
@@ -64,35 +64,35 @@ function findStyleDef(tableStyleXml: any, styleId: string): any | undefined {
 
 function buildBorder(tcStyle: any, side: string): any | undefined {
   if (!tcStyle) return undefined;
-  const borders = tcStyle.tcBdr;
+  const borders = tcStyle["a:tcBdr"];
   if (!borders) return undefined;
-  const border = borders[side];
+  const border = borders["a:" + side];
   if (!border) return undefined;
-  return border.ln ?? border;
+  return border["a:ln"] ?? border;
 }
 
 function applyTableStyle(table: any, styleDef: any): string[] {
   const changes: string[] = [];
-  const rows = table.tr;
+  const rows = table["a:tr"];
   if (!rows) return changes;
   const rowArr = Array.isArray(rows) ? rows : [rows];
 
-  const tblPr = table.tblPr ?? {};
+  const tblPr = table["a:tblPr"] ?? {};
   const hasFirstRow = tblPr["@_firstRow"] === "1" || tblPr["@_firstRow"] === "true";
   const hasLastRow = tblPr["@_lastRow"] === "1" || tblPr["@_lastRow"] === "true";
   const hasBandRow = tblPr["@_bandRow"] === "1" || tblPr["@_bandRow"] === "true";
 
-  const wholeTbl = styleDef?.wholeTbl?.tcStyle;
-  const firstRowStyle = hasFirstRow ? styleDef?.firstRow?.tcStyle : undefined;
-  const lastRowStyle = hasLastRow ? styleDef?.lastRow?.tcStyle : undefined;
-  const band1H = hasBandRow ? styleDef?.band1H?.tcStyle : undefined;
-  const band2H = hasBandRow ? styleDef?.band2H?.tcStyle : undefined;
+  const wholeTbl = styleDef?.["a:wholeTbl"]?.["a:tcStyle"];
+  const firstRowStyle = hasFirstRow ? styleDef?.["a:firstRow"]?.["a:tcStyle"] : undefined;
+  const lastRowStyle = hasLastRow ? styleDef?.["a:lastRow"]?.["a:tcStyle"] : undefined;
+  const band1H = hasBandRow ? styleDef?.["a:band1H"]?.["a:tcStyle"] : undefined;
+  const band2H = hasBandRow ? styleDef?.["a:band2H"]?.["a:tcStyle"] : undefined;
 
   let cellCount = 0;
 
   for (let ri = 0; ri < rowArr.length; ri++) {
     const row = rowArr[ri];
-    const cells = row.tc;
+    const cells = row["a:tc"];
     if (!cells) continue;
     const cellArr = Array.isArray(cells) ? cells : [cells];
 
@@ -102,11 +102,11 @@ function applyTableStyle(table: any, styleDef: any): string[] {
     else if (hasBandRow) activeStyle = (ri % 2 === (hasFirstRow ? 1 : 0)) ? band1H ?? wholeTbl : band2H ?? wholeTbl;
 
     for (const cell of cellArr) {
-      if (!cell.tcPr) cell.tcPr = {};
-      const tcPr = cell.tcPr;
+      if (!cell["a:tcPr"]) cell["a:tcPr"] = {};
+      const tcPr = cell["a:tcPr"];
 
       let modified = false;
-      for (const [xmlSide, styleSide] of [["lnL", "left"], ["lnR", "right"], ["lnT", "top"], ["lnB", "bottom"]] as const) {
+      for (const [xmlSide, styleSide] of [["a:lnL", "left"], ["a:lnR", "right"], ["a:lnT", "top"], ["a:lnB", "bottom"]] as const) {
         if (tcPr[xmlSide]) continue;
         const border = buildBorder(activeStyle, styleSide) ?? buildBorder(wholeTbl, styleSide);
         if (border) {
@@ -135,7 +135,7 @@ export const tableStyles: Transform = {
 
     for (const { table } of tables) {
       if (!tableNeedsFix(table)) continue;
-      const styleId = table.tblPr?.["@_tblStyle"] ?? table.tblPr?.tblStyle;
+      const styleId = table["a:tblPr"]?.["@_tblStyle"];
       if (!styleId) continue;
 
       const styleDef = findStyleDef(ctx.tableStyleXml, styleId);

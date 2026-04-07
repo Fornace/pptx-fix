@@ -39,7 +39,7 @@ function getReplacement(fontName: string): string | null {
   return result;
 }
 
-const FONT_ELEMENTS = new Set(["latin", "ea", "cs", "sym", "buFont"]);
+const FONT_ELEMENTS = new Set(["a:latin", "a:ea", "a:cs", "a:sym", "a:buFont"]);
 
 function replaceFonts(node: any, seen: Set<string>, changes: string[]): void {
   if (!node || typeof node !== "object") return;
@@ -55,7 +55,7 @@ function replaceFonts(node: any, seen: Set<string>, changes: string[]): void {
         el["@_typeface"] = replacement;
         if (!seen.has(typeface)) {
           seen.add(typeface);
-          changes.push(`replaced font "${typeface}" ��� "${replacement}"`);
+          changes.push(`replaced font "${typeface}" → "${replacement}"`);
         }
       }
     }

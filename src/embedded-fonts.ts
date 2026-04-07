@@ -12,7 +12,7 @@ import type JSZip from "jszip";
 import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import { FONT_METRICS, findClosestFont, APPLE_SYSTEM_FONT_LIST } from "quicklook-pptx-renderer";
 
-const FONT_ELEMENTS = new Set(["latin", "ea", "cs", "sym", "buFont"]);
+const FONT_ELEMENTS = new Set(["a:latin", "a:ea", "a:cs", "a:sym", "a:buFont"]);
 
 const relsParserOptions = {
   ignoreAttributes: false,
@@ -33,11 +33,11 @@ const relsBuilderOptions = {
 const presParserOptions = {
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
-  removeNSPrefix: true,
+  removeNSPrefix: false,
   parseTagValue: false,
   parseAttributeValue: false,
   trimValues: false,
-  isArray: (name: string) => name === "embeddedFont",
+  isArray: (name: string) => name === "p:embeddedFont",
 };
 
 const presBuilderOptions = {
@@ -46,6 +46,22 @@ const presBuilderOptions = {
   format: false,
   suppressEmptyNode: false,
   suppressBooleanAttributes: false,
+};
+
+/** Slide/theme parser — must preserve namespace prefixes for round-trip. */
+const slideParserOptions = {
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  removeNSPrefix: false,
+  parseTagValue: false,
+  parseAttributeValue: false,
+  trimValues: false,
+  isArray: (name: string) => [
+    "p:sp", "p:pic", "p:cxnSp", "p:grpSp", "p:graphicFrame",
+    "a:p", "a:r", "a:br", "a:fld",
+    "a:gs", "a:ln", "a:solidFill", "a:gradFill",
+    "a:tr", "a:tc", "a:tblStyleLst", "a:ext",
+  ].includes(name),
 };
 
 /** Find the best cross-platform replacement for a font name. */
@@ -92,10 +108,10 @@ export async function stripEmbeddedFonts(
 
   const parser = new XMLParser(presParserOptions);
   const presXml = parser.parse(await presFile.async("string"));
-  const presNode = presXml?.Presentation ?? presXml?.presentation ?? presXml;
+  const presNode = presXml?.["p:presentation"] ?? presXml;
   if (!presNode) return;
 
-  const embFontLst = presNode.embeddedFontLst?.embeddedFont;
+  const embFontLst = presNode["p:embeddedFontLst"]?.["p:embeddedFont"];
   if (!embFontLst) return;
 
   const entries = Array.isArray(embFontLst) ? embFontLst : [embFontLst];
@@ -107,15 +123,15 @@ export async function stripEmbeddedFonts(
   const rIdsToRemove = new Set<string>();
 
   for (const entry of entries) {
-    const typeface = entry.font?.["@_typeface"];
+    const typeface = entry["p:font"]?.["@_typeface"];
     if (typeface) {
       fontNames.push(typeface);
       const replacement = findReplacement(typeface);
       if (replacement) replacements.set(typeface, replacement);
     }
 
-    for (const variant of ["regular", "bold", "italic", "boldItalic"]) {
-      const rId = entry[variant]?.["@_id"];
+    for (const variant of ["p:regular", "p:bold", "p:italic", "p:boldItalic"]) {
+      const rId = entry[variant]?.["@_r:id"];
       if (rId) rIdsToRemove.add(rId);
     }
   }
@@ -124,12 +140,13 @@ export async function stripEmbeddedFonts(
 
   // Replace font references across slides and themes
   if (replacements.size > 0) {
+    const slideParser = new XMLParser(slideParserOptions);
     const xmlFiles = Object.keys(zip.files).filter(f =>
       /^ppt\/(slides\/slide|theme\/theme)\d+\.xml$/.test(f)
     );
     for (const path of xmlFiles) {
       const xml = await zip.file(path)!.async("string");
-      const parsed = parser.parse(xml);
+      const parsed = slideParser.parse(xml);
       replaceTypefaces(parsed, replacements);
       const builder = new XMLBuilder(presBuilderOptions);
       zip.file(path, builder.build(parsed));
@@ -137,7 +154,7 @@ export async function stripEmbeddedFonts(
   }
 
   // Remove embeddedFontLst from presentation XML
-  delete presNode.embeddedFontLst;
+  delete presNode["p:embeddedFontLst"];
   const builder = new XMLBuilder(presBuilderOptions);
   zip.file("ppt/presentation.xml", builder.build(presXml));
 

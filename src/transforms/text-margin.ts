@@ -14,12 +14,12 @@ const MARGIN = 0.15;
 function widenTextBoxes(node: any, changes: string[]): void {
   if (!node || typeof node !== "object") return;
 
-  const shapes = node.sp;
+  const shapes = node["p:sp"];
   if (shapes) {
     const list = Array.isArray(shapes) ? shapes : [shapes];
     for (const sp of list) {
-      if (!sp.txBody) continue;
-      const rawExt = sp.spPr?.xfrm?.ext;
+      if (!sp["p:txBody"]) continue;
+      const rawExt = sp["p:spPr"]?.["a:xfrm"]?.["a:ext"];
       if (!rawExt) continue;
       const ext = Array.isArray(rawExt) ? rawExt[0] : rawExt;
       if (!ext?.["@_cx"]) continue;
@@ -44,7 +44,7 @@ export const textMargin: Transform = {
 
   apply(slideXml: any, slideNum: number, _ctx: TransformContext): TransformResult {
     const changes: string[] = [];
-    const spTree = slideXml?.sld?.cSld?.spTree ?? slideXml?.cSld?.spTree;
+    const spTree = slideXml?.["p:sld"]?.["p:cSld"]?.["p:spTree"];
     if (spTree) {
       const before = JSON.stringify(spTree);
       widenTextBoxes(spTree, changes);

@@ -11,11 +11,11 @@
 
 import type { Transform, TransformContext, TransformResult } from "./index.js";
 
-const CHILD_KEYS = ["sp", "pic", "cxnSp", "graphicFrame"] as const;
+const CHILD_KEYS = ["p:sp", "p:pic", "p:cxnSp", "p:graphicFrame"] as const;
 
 function getXfrm(child: any, key: string): any | undefined {
-  if (key === "graphicFrame") return child.xfrm;
-  return child.spPr?.xfrm;
+  if (key === "p:graphicFrame") return child["p:xfrm"] ?? child["a:xfrm"];
+  return child["p:spPr"]?.["a:xfrm"];
 }
 
 function transformCoords(
@@ -25,8 +25,9 @@ function transformCoords(
   chOff: { x: number; y: number },
   chExt: { cx: number; cy: number },
 ): void {
-  const off = xfrm.off;
-  const ext = xfrm.ext;
+  const off = xfrm["a:off"];
+  const rawExt = xfrm["a:ext"];
+  const ext = Array.isArray(rawExt) ? rawExt[0] : rawExt;
   if (!off || !ext) return;
 
   const scaleX = chExt.cx > 0 ? groupExt.cx / chExt.cx : 1;
@@ -45,16 +46,16 @@ function ensureArray(parent: any, key: string): any[] {
 }
 
 function ungroupInto(parent: any, changes: string[]): void {
-  if (!parent.grpSp) return;
-  const groups = Array.isArray(parent.grpSp) ? parent.grpSp : [parent.grpSp];
+  if (!parent["p:grpSp"]) return;
+  const groups = Array.isArray(parent["p:grpSp"]) ? parent["p:grpSp"] : [parent["p:grpSp"]];
   const kept: any[] = [];
 
   for (const group of groups) {
     // Recurse into nested groups first (ungroup from inside out)
     ungroupInto(group, changes);
 
-    const xfrm = group.grpSpPr?.xfrm;
-    if (!xfrm?.off || !xfrm?.ext || !xfrm?.chOff || !xfrm?.chExt) {
+    const xfrm = group["p:grpSpPr"]?.["a:xfrm"];
+    if (!xfrm?.["a:off"] || !xfrm?.["a:ext"] || !xfrm?.["a:chOff"] || !xfrm?.["a:chExt"]) {
       kept.push(group);
       continue;
     }
@@ -65,11 +66,16 @@ function ungroupInto(parent: any, changes: string[]): void {
       continue;
     }
 
-    const groupOff = { x: Number(xfrm.off["@_x"] ?? 0), y: Number(xfrm.off["@_y"] ?? 0) };
-    const groupExt = { cx: Number(xfrm.ext["@_cx"] ?? 1), cy: Number(xfrm.ext["@_cy"] ?? 1) };
-    const chOff = { x: Number(xfrm.chOff["@_x"] ?? 0), y: Number(xfrm.chOff["@_y"] ?? 0) };
-    const chExt = { cx: Number(xfrm.chExt["@_cx"] ?? 1), cy: Number(xfrm.chExt["@_cy"] ?? 1) };
-    const name = group.nvGrpSpPr?.cNvPr?.["@_name"] ?? "group";
+    const gOff = xfrm["a:off"];
+    const gExt = Array.isArray(xfrm["a:ext"]) ? xfrm["a:ext"][0] : xfrm["a:ext"];
+    const gChOff = xfrm["a:chOff"];
+    const gChExt = Array.isArray(xfrm["a:chExt"]) ? xfrm["a:chExt"][0] : xfrm["a:chExt"];
+
+    const groupOff = { x: Number(gOff["@_x"] ?? 0), y: Number(gOff["@_y"] ?? 0) };
+    const groupExt = { cx: Number(gExt["@_cx"] ?? 1), cy: Number(gExt["@_cy"] ?? 1) };
+    const chOff = { x: Number(gChOff["@_x"] ?? 0), y: Number(gChOff["@_y"] ?? 0) };
+    const chExt = { cx: Number(gChExt["@_cx"] ?? 1), cy: Number(gChExt["@_cy"] ?? 1) };
+    const name = group["p:nvGrpSpPr"]?.["p:cNvPr"]?.["@_name"] ?? "group";
 
     let childCount = 0;
     for (const key of CHILD_KEYS) {
@@ -85,10 +91,10 @@ function ungroupInto(parent: any, changes: string[]): void {
     }
 
     // Any nested groups that couldn't be ungrouped stay as top-level groups
-    if (group.grpSp) {
-      const nested = Array.isArray(group.grpSp) ? group.grpSp : [group.grpSp];
+    if (group["p:grpSp"]) {
+      const nested = Array.isArray(group["p:grpSp"]) ? group["p:grpSp"] : [group["p:grpSp"]];
       for (const ng of nested) {
-        const ngXfrm = ng.grpSpPr?.xfrm;
+        const ngXfrm = ng["p:grpSpPr"]?.["a:xfrm"];
         if (ngXfrm) transformCoords(ngXfrm, groupOff, groupExt, chOff, chExt);
         kept.push(ng);
       }
@@ -100,9 +106,9 @@ function ungroupInto(parent: any, changes: string[]): void {
   }
 
   if (kept.length > 0) {
-    parent.grpSp = kept;
+    parent["p:grpSp"] = kept;
   } else {
-    delete parent.grpSp;
+    delete parent["p:grpSp"];
   }
 }
 
@@ -111,7 +117,7 @@ export const groups: Transform = {
 
   apply(slideXml: any, _slideNum: number, _ctx: TransformContext): TransformResult {
     const changes: string[] = [];
-    const spTree = slideXml?.sld?.cSld?.spTree ?? slideXml?.cSld?.spTree;
+    const spTree = slideXml?.["p:sld"]?.["p:cSld"]?.["p:spTree"];
     if (spTree) ungroupInto(spTree, changes);
     return { changed: changes.length > 0, changes };
   },

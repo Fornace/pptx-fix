@@ -10,42 +10,42 @@ import type { Transform, TransformContext, TransformResult } from "./index.js";
 function stripEffects(node: any, changes: string[]): void {
   if (!node || typeof node !== "object") return;
 
-  // Shape elements: sp, cxnSp, pic
-  const shapeKeys = ["sp", "cxnSp", "pic"];
+  // Shape elements: p:sp, p:cxnSp, p:pic
+  const shapeKeys = ["p:sp", "p:cxnSp", "p:pic"];
   for (const key of shapeKeys) {
     if (!node[key]) continue;
     const shapes = Array.isArray(node[key]) ? node[key] : [node[key]];
     for (const shape of shapes) {
-      const spPr = shape.spPr;
+      const spPr = shape["p:spPr"];
       if (!spPr) continue;
 
-      const name = shape.nvSpPr?.cNvPr?.["@_name"]
-        ?? shape.nvCxnSpPr?.cNvPr?.["@_name"]
-        ?? shape.nvPicPr?.cNvPr?.["@_name"]
+      const name = shape["p:nvSpPr"]?.["p:cNvPr"]?.["@_name"]
+        ?? shape["p:nvCxnSpPr"]?.["p:cNvPr"]?.["@_name"]
+        ?? shape["p:nvPicPr"]?.["p:cNvPr"]?.["@_name"]
         ?? "shape";
 
-      if (spPr.effectLst) {
-        delete spPr.effectLst;
+      if (spPr["a:effectLst"]) {
+        delete spPr["a:effectLst"];
         changes.push(`stripped effects from "${name}"`);
       }
-      if (spPr.effectDag) {
-        delete spPr.effectDag;
+      if (spPr["a:effectDag"]) {
+        delete spPr["a:effectDag"];
         changes.push(`stripped effect DAG from "${name}"`);
       }
     }
   }
 
   // Groups: recurse into grpSp children
-  if (node.grpSp) {
-    const groups = Array.isArray(node.grpSp) ? node.grpSp : [node.grpSp];
+  if (node["p:grpSp"]) {
+    const groups = Array.isArray(node["p:grpSp"]) ? node["p:grpSp"] : [node["p:grpSp"]];
     for (const group of groups) {
       stripEffects(group, changes);
     }
   }
 
   // Recurse into spTree (the slide's shape tree)
-  if (node.spTree) {
-    stripEffects(node.spTree, changes);
+  if (node["p:spTree"]) {
+    stripEffects(node["p:spTree"], changes);
   }
 }
 
