@@ -19,7 +19,9 @@ function widenTextBoxes(node: any, changes: string[]): void {
     const list = Array.isArray(shapes) ? shapes : [shapes];
     for (const sp of list) {
       if (!sp.txBody) continue;
-      const ext = sp.spPr?.xfrm?.ext;
+      const rawExt = sp.spPr?.xfrm?.ext;
+      if (!rawExt) continue;
+      const ext = Array.isArray(rawExt) ? rawExt[0] : rawExt;
       if (!ext?.["@_cx"]) continue;
       const cx = Number(ext["@_cx"]);
       if (cx <= 0) continue;
