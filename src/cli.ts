@@ -29,7 +29,9 @@ function positional(): string[] {
 
 async function main() {
   if (hasFlag("--version") || hasFlag("-v")) {
-    console.log("0.3.1");
+    const { createRequire } = await import("node:module");
+    const pkg = createRequire(import.meta.url)("../package.json");
+    console.log(pkg.version);
     process.exit(0);
   }
 

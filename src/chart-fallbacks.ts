@@ -32,6 +32,20 @@ const relsBuilderOptions = {
   suppressEmptyNode: false,
 };
 
+/** Slide parser — preserves namespace prefixes for correct element access. */
+const slideParserOptions = {
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  removeNSPrefix: false,
+  parseTagValue: false,
+  parseAttributeValue: false,
+  trimValues: false,
+  isArray: (name: string) => [
+    "p:sp", "p:pic", "p:cxnSp", "p:grpSp", "p:graphicFrame",
+    "a:p", "a:r", "a:ext",
+  ].includes(name),
+};
+
 interface ChartInfo {
   slideNum: number;
   chartPath: string;     // e.g. "ppt/charts/chart1.xml"
@@ -41,7 +55,8 @@ interface ChartInfo {
 
 /** Find charts without fallback images in the PPTX. */
 async function findChartsWithoutFallback(zip: JSZip): Promise<ChartInfo[]> {
-  const parser = new XMLParser(relsParserOptions);
+  const relsParser = new XMLParser(relsParserOptions);
+  const slideParser = new XMLParser(slideParserOptions);
   const results: ChartInfo[] = [];
 
   const slideFiles = Object.keys(zip.files)
@@ -55,7 +70,7 @@ async function findChartsWithoutFallback(zip: JSZip): Promise<ChartInfo[]> {
     const slideRelsPath = slidePath.replace("slides/", "slides/_rels/").replace(".xml", ".xml.rels");
     const slideRelsFile = zip.file(slideRelsPath);
     if (!slideRelsFile) continue;
-    const slideRels = parser.parse(await slideRelsFile.async("string"));
+    const slideRels = relsParser.parse(await slideRelsFile.async("string"));
     const rels = slideRels.Relationships?.Relationship ?? [];
 
     // Find chart relationships
@@ -77,7 +92,7 @@ async function findChartsWithoutFallback(zip: JSZip): Promise<ChartInfo[]> {
       const chartRelsFile = zip.file(chartRelsPath);
 
       if (chartRelsFile) {
-        const chartRelsXml = parser.parse(await chartRelsFile.async("string"));
+        const chartRelsXml = relsParser.parse(await chartRelsFile.async("string"));
         const chartRelsList = chartRelsXml.Relationships?.Relationship ?? [];
         const hasImage = chartRelsList.some((r: any) =>
           r["@_Type"]?.includes("/image") || r["@_Type"] === IMAGE_REL_TYPE
@@ -87,7 +102,7 @@ async function findChartsWithoutFallback(zip: JSZip): Promise<ChartInfo[]> {
 
       // Get chart bounds from slide XML
       const slideXmlStr = await zip.file(slidePath)!.async("string");
-      const slideXml = parser.parse(slideXmlStr);
+      const slideXml = slideParser.parse(slideXmlStr);
       const bounds = findChartBounds(slideXml, chartRel["@_Id"]);
       if (!bounds) continue;
 
@@ -105,16 +120,24 @@ function findChartBounds(
 ): { x: number; y: number; cx: number; cy: number } | null {
   const frames = findGraphicFrames(slideXml);
   for (const frame of frames) {
-    const chartRef = frame.graphic?.graphicData?.chart;
+    // Chart ref can be under a:graphic > a:graphicData with various prefixes
+    const graphicData = frame["a:graphic"]?.["a:graphicData"]
+      ?? frame["p:graphic"]?.["a:graphicData"];
+    const chartRef = graphicData?.["c:chart"] ?? graphicData?.["chart"];
     if (!chartRef) continue;
-    if (chartRef["@_id"] === rId || chartRef["@_r:id"] === rId) {
-      const xfrm = frame.xfrm;
-      if (!xfrm?.off || !xfrm?.ext) continue;
+    if (chartRef["@_r:id"] === rId || chartRef["@_id"] === rId) {
+      // graphicFrame xfrm is p:xfrm (direct child)
+      const xfrm = frame["p:xfrm"] ?? frame["a:xfrm"];
+      if (!xfrm) continue;
+      const off = xfrm["a:off"];
+      const rawExt = xfrm["a:ext"];
+      const ext = Array.isArray(rawExt) ? rawExt[0] : rawExt;
+      if (!off || !ext) continue;
       return {
-        x: Number(xfrm.off["@_x"] ?? 0),
-        y: Number(xfrm.off["@_y"] ?? 0),
-        cx: Number(xfrm.ext["@_cx"] ?? 0),
-        cy: Number(xfrm.ext["@_cy"] ?? 0),
+        x: Number(off["@_x"] ?? 0),
+        y: Number(off["@_y"] ?? 0),
+        cx: Number(ext["@_cx"] ?? 0),
+        cy: Number(ext["@_cy"] ?? 0),
       };
     }
   }
@@ -124,8 +147,8 @@ function findChartBounds(
 function findGraphicFrames(node: any): any[] {
   const results: any[] = [];
   if (!node || typeof node !== "object") return results;
-  if (node.graphicFrame) {
-    const frames = Array.isArray(node.graphicFrame) ? node.graphicFrame : [node.graphicFrame];
+  if (node["p:graphicFrame"]) {
+    const frames = Array.isArray(node["p:graphicFrame"]) ? node["p:graphicFrame"] : [node["p:graphicFrame"]];
     results.push(...frames);
   }
   for (const key of Object.keys(node)) {
@@ -213,7 +236,6 @@ async function embedFallback(
   }
 
   // Compute relative path from chart to media
-  const chartDir = chart.chartPath.replace(/[^/]+$/, "");
   const relTarget = "../" + mediaPath.slice(4); // strip "ppt/"
   const rId = `rId${relsXml.Relationships.Relationship.length + 1}`;
 
