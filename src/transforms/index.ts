@@ -12,6 +12,7 @@ import { geometries } from "./geometries.js";
 import { effects } from "./effects.js";
 import { fonts } from "./fonts.js";
 import { groups } from "./groups.js";
+import { textFit } from "./text-fit.js";
 export type TransformName =
   | "table-styles"
   | "gradients"
@@ -19,10 +20,12 @@ export type TransformName =
   | "effects"
   | "fonts"
   | "groups"
+  | "text-fit"
   | "embedded-fonts";
 
 export interface TransformContext {
   tableStyleXml?: any;
+  themeXml?: any;
 }
 
 export interface TransformResult {
@@ -42,4 +45,5 @@ export const ALL_TRANSFORMS: Transform[] = [
   effects,
   fonts,
   groups,
+  textFit,
 ];

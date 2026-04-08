@@ -53,6 +53,15 @@ export async function fix(pptxBuffer: Buffer, options?: FixOptions): Promise<Fix
     }
   }
 
+  // Load theme XML if needed (for text-fit transform)
+  let themeXml: any = undefined;
+  if (enabledNames.has("text-fit")) {
+    const themeFile = zip.file("ppt/theme/theme1.xml");
+    if (themeFile) {
+      themeXml = parser.parse(await themeFile.async("string"));
+    }
+  }
+
   // Process each slide
   for (const slidePath of slideFiles) {
     const slideNum = parseInt(slidePath.match(/\d+/)![0]);
@@ -61,7 +70,7 @@ export async function fix(pptxBuffer: Buffer, options?: FixOptions): Promise<Fix
 
     let changed = false;
     for (const transform of enabled) {
-      const result = transform.apply(parsed, slideNum, { tableStyleXml });
+      const result = transform.apply(parsed, slideNum, { tableStyleXml, themeXml });
       if (result.changed) {
         changed = true;
         for (const line of result.changes) {

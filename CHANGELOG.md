@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- **Canvas-based text-fit transform** — measures actual rendered text dimensions using `@napi-rs/canvas` with macOS system fonts, then shrinks font sizes where text overflows its box or overlaps other text. Runs after font replacement to verify substituted fonts actually fit. Two-pass approach: first fixes per-box overflow, then fixes inter-box overlap.
+- **Removed text-margin transform** — the old 15% box-width scaling was a blunt heuristic. Replaced by precise per-shape font size reduction based on real measurement.
+- Adds `@napi-rs/canvas` as a hard dependency
+
 ## 0.3.2
 
 - **Font substitution now picks real Apple system fonts** — was incorrectly picking non-system Google Fonts (e.g. Montserrat → Barlow, which isn't installed on any Apple device). Now uses `APPLE_SYSTEM_FONT_LIST` from quicklook-pptx-renderer, ensuring all 29 candidate fonts are preinstalled on both macOS and iOS

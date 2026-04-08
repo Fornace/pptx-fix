@@ -1,6 +1,6 @@
 {
   "name": "pptx-fix",
-  "version": "0.3.8",
+  "version": "0.4.0",
   "description": "Fix PowerPoint files that render incorrectly on macOS QuickLook and iOS — resolves missing table borders, invisible shapes, flattened gradients, and opaque blocks caused by OfficeImport rendering gaps.",
   "type": "module",
   "main": "dist/index.js",
@@ -59,6 +59,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.65",
     "fast-xml-parser": "^5.2.0",
     "jszip": "^3.10.1",
     "quicklook-pptx-renderer": "^0.3.4"

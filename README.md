@@ -84,9 +84,10 @@ for (const issue of issues) {
 | **fonts** | Done | Replaces high-risk Windows fonts (Calibri +14.4%, Segoe UI +14%, Corbel +18.8%, etc.) with metrically-closest Apple system font (from 29 fonts preinstalled on both macOS and iOS). Prefers narrower substitutes to avoid text overflow. Also fixes fonts in theme XML. |
 | **groups** | Done | Ungroups shape groups so children render individually instead of being merged into a single opaque PDF block. Transforms child coordinates from group-space to slide-space. Skips rotated groups. |
 | **embedded-fonts** | Done | Strips embedded font data (ignored by QuickLook) and replaces font references with the metrically-closest Apple system font. E.g. Montserrat → DIN Alternate (-4.3% width). Reduces file size and ensures consistent rendering. |
+| **text-fit** | Done | Measures actual rendered text using canvas with macOS system fonts. Detects text that overflows its box or overlaps adjacent text after font replacement, and shrinks font sizes by the exact amount needed to fit. |
 | **chart-fallbacks** | Done | Renders charts to PNG and embeds as fallback images so QuickLook displays charts instead of blank rectangles. Requires Playwright (optional — skips silently if not installed). |
 
-Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s 12-rule linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
+Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
 
 ---
 
@@ -146,8 +147,7 @@ npx pptx-fix presentation.pptx -o fixed.pptx
 |---------|---------|
 | [jszip](https://stuk.github.io/jszip/) | ZIP extraction/repacking |
 | [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser) | OOXML XML parsing and serialization |
-
-Zero native dependencies. Works everywhere Node.js 20+ runs.
+| [@napi-rs/canvas](https://github.com/nicolo-ribaudo/napi-canvas) | Canvas-based text measurement for text-fit transform |
 
 ## License
 
