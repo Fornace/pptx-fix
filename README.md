@@ -87,7 +87,7 @@ for (const issue of issues) {
 | **text-fit** | Done | Measures actual rendered text using canvas with macOS system fonts. Detects text that overflows its box or overlaps adjacent text after font replacement, and shrinks font sizes by the exact amount needed to fit. |
 | **chart-fallbacks** | Done | Renders charts to PNG and embeds as fallback images so QuickLook displays charts instead of blank rectangles. Requires Playwright (optional — skips silently if not installed). |
 
-Detection of all issues (including font substitution, chart fallbacks, text inscription shifts, and more) is handled by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer)'s linter. Run `pptx-fix analyze` to see all issues, or use the linter directly in CI.
+All issue detection, font metrics, and text measurement are provided by [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer). Run `pptx-fix analyze` to see all issues, or use the renderer's linter directly in CI.
 
 ---
 
@@ -109,34 +109,27 @@ Detection of all issues (including font substitution, chart fallbacks, text insc
 
 ## How It Works
 
+Built on top of [**quicklook-pptx-renderer**](https://www.npmjs.com/package/quicklook-pptx-renderer) — an open-source rendering engine that replicates Apple's QuickLook PPTX output pixel for pixel. The renderer provides the font metrics database, macOS font substitution maps, text measurement via canvas, and a linter that detects every class of issue this tool fixes. It runs on Linux/Docker without a Mac.
+
 ```
-PPTX (ZIP) → extract XML → parse → detect issues → apply transforms → serialize → repack ZIP
+PPTX (ZIP) → extract XML → parse → apply transforms → measure text → serialize → repack ZIP
 ```
 
-1. **Extract** — JSZip opens the PPTX (which is a ZIP archive)
+1. **Extract** — JSZip opens the PPTX ZIP archive
 2. **Parse** — fast-xml-parser converts slide XML to objects, preserving all unknown elements
-3. **Detect** — each transform scans for its class of issues
-4. **Apply** — transforms mutate the XML objects (e.g., inline borders from table style definitions)
-5. **Serialize** — XMLBuilder converts back to XML
-6. **Repack** — JSZip produces a new valid PPTX
-
-The round-trip preserves all XML elements the tool doesn't explicitly modify — the output is always a valid PPTX.
-
----
-
-## Detecting Issues Without Fixing
-
-For comprehensive linting with 12 rules, CI integration, cross-platform rendering, and pixel-diff comparison against actual QuickLook output, see [**quicklook-pptx-renderer**](https://www.npmjs.com/package/quicklook-pptx-renderer) — a companion renderer + linter that replicates Apple's QuickLook output pixel for pixel, runs on Linux/Docker without a Mac.
+3. **Transform** — each transform mutates the XML to work around OfficeImport quirks, using font metrics and substitution data from the renderer
+4. **Measure** — the text-fit transform measures actual rendered text with canvas using macOS system fonts, verifying that post-transform text still fits
+5. **Serialize** — XMLBuilder converts back to XML, JSZip produces a new valid PPTX
 
 ```bash
-# Lint (JSON output for CI)
+# Analyze issues without fixing (uses the renderer's linter)
+npx pptx-fix analyze presentation.pptx
+
+# Lint directly with the renderer (JSON output for CI)
 npx quicklook-pptx lint presentation.pptx --json
 
 # Render slides as PNG (see exactly what Mac users see)
 npx quicklook-pptx render presentation.pptx --out ./slides/
-
-# Fix (this package)
-npx pptx-fix presentation.pptx -o fixed.pptx
 ```
 
 ---
@@ -145,9 +138,10 @@ npx pptx-fix presentation.pptx -o fixed.pptx
 
 | Package | Purpose |
 |---------|---------|
+| [quicklook-pptx-renderer](https://www.npmjs.com/package/quicklook-pptx-renderer) | Font metrics, font substitution maps, text measurement, and issue detection — all transforms depend on its data |
+| [@napi-rs/canvas](https://github.com/nicolo-ribaudo/napi-canvas) | Canvas-based text measurement with macOS system fonts for text-fit transform |
 | [jszip](https://stuk.github.io/jszip/) | ZIP extraction/repacking |
 | [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser) | OOXML XML parsing and serialization |
-| [@napi-rs/canvas](https://github.com/nicolo-ribaudo/napi-canvas) | Canvas-based text measurement for text-fit transform |
 
 ## License
 
